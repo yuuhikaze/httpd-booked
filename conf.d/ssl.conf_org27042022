@@ -1,0 +1,1438 @@
+#
+# When we also provide SSL we have to listen to the 
+# the HTTPS port in addition.
+#
+Listen 443 https
+
+##
+##  SSL Global Context
+##
+##  All SSL configuration in this context applies both to
+##  the main server and all SSL-enabled virtual hosts.
+##
+
+#   Pass Phrase Dialog:
+#   Configure the pass phrase gathering process.
+#   The filtering dialog program (`builtin' is a internal
+#   terminal dialog) has to provide the pass phrase on stdout.
+SSLPassPhraseDialog exec:/usr/libexec/httpd-ssl-pass-dialog
+
+#   Inter-Process Session Cache:
+#   Configure the SSL Session Cache: First the mechanism 
+#   to use and second the expiring timeout (in seconds).
+SSLSessionCache         shmcb:/run/httpd/sslcache(512000)
+SSLSessionCacheTimeout  300
+
+#   Pseudo Random Number Generator (PRNG):
+#   Configure one or more sources to seed the PRNG of the 
+#   SSL library. The seed data should be of good random quality.
+#   WARNING! On some platforms /dev/random blocks if not enough entropy
+#   is available. This means you then cannot use the /dev/random device
+#   because it would lead to very long connection times (as long as
+#   it requires to make more entropy available). But usually those
+#   platforms additionally provide a /dev/urandom device which doesn't
+#   block. So, if available, use this one instead. Read the mod_ssl User
+#   Manual for more details.
+SSLRandomSeed startup file:/dev/urandom  256
+SSLRandomSeed connect builtin
+#SSLRandomSeed startup file:/dev/random  512
+#SSLRandomSeed connect file:/dev/random  512
+#SSLRandomSeed connect file:/dev/urandom 512
+
+#
+# Use "SSLCryptoDevice" to enable any supported hardware
+# accelerators. Use "openssl engine -v" to list supported
+# engine names.  NOTE: If you enable an accelerator and the
+# server does not start, consult the error logs and ensure
+# your accelerator is functioning properly. 
+#
+SSLCryptoDevice builtin
+#SSLCryptoDevice ubsec
+
+##
+## SSL Virtual Host Context
+##
+
+<VirtualHost _default_:443>
+
+# General setup for the virtual host, inherited from global configuration
+#DocumentRoot "/var/www/html"
+#ServerName www.example.com:443
+ServerName P-MOODLE-OL-03.usfq.edu.ec:443
+
+# Use separate log files for the SSL virtual host; note that LogLevel
+# is not inherited from httpd.conf.
+ErrorLog logs/ssl_error_log
+TransferLog logs/ssl_access_log
+LogLevel warn
+
+#   SSL Engine Switch:
+#   Enable/Disable SSL for this virtual host.
+SSLEngine on
+
+#   SSL Protocol support:
+# List the enable protocol levels with which clients will be able to
+# connect.  Disable SSLv2 access by default:
+#SSLProtocol all -SSLv2 -SSLv3
+SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1
+
+#   SSL Cipher Suite:
+#   List the ciphers that the client is permitted to negotiate.
+#   See the mod_ssl documentation for a complete list.
+#SSLCipherSuite HIGH:3DES:!aNULL:!MD5:!SEED:!IDEA
+
+SSLCipherSuite EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH:ECDHE-RSA-AES128-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA128:DHE-RSA-AES128-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES128-GCM-SHA128:ECDHE-RSA-AES128-SHA384:ECDHE-RSA-AES128-SHA128:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA128:DHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA384:AES128-GCM-SHA128:AES128-SHA128:AES128-SHA128:AES128-SHA:AES128-SHA:DES-CBC3-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4:!3DES
+
+#   Speed-optimized SSL Cipher configuration:
+#   If speed is your main concern (on busy HTTPS servers e.g.),
+#   you might want to force clients to specific, performance
+#   optimized ciphers. In this case, prepend those ciphers
+#   to the SSLCipherSuite list, and enable SSLHonorCipherOrder.
+#   Caveat: by giving precedence to RC4-SHA and AES128-SHA
+#   (as in the example below), most connections will no longer
+#   have perfect forward secrecy - if the server's key is
+#   compromised, captures of past or future traffic must be
+#   considered compromised, too.
+#SSLCipherSuite RC4-SHA:AES128-SHA:HIGH:MEDIUM:!aNULL:!MD5
+SSLHonorCipherOrder on 
+
+#   Server Certificate:
+# Point SSLCertificateFile at a PEM encoded certificate.  If
+# the certificate is encrypted, then you will be prompted for a
+# pass phrase.  Note that a kill -HUP will prompt again.  A new
+# certificate can be generated using the genkey(1) command.
+#SSLCertificateFile /etc/pki/tls/certs/localhost.crt
+SSLCertificateFile /etc/pki/tls/certs/www42.crt
+
+#   Server Private Key:
+#   If the key is not combined with the certificate, use this
+#   directive to point at the key file.  Keep in mind that if
+#   you've both a RSA and a DSA private key you can configure
+#   both in parallel (to also allow the use of DSA ciphers, etc.)
+#SSLCertificateKeyFile /etc/pki/tls/private/localhost.key
+SSLCertificateKeyFile /etc/pki/tls/private/usfq.key
+
+#   Server Certificate Chain:
+#   Point SSLCertificateChainFile at a file containing the
+#   concatenation of PEM encoded CA certificates which form the
+#   certificate chain for the server certificate. Alternatively
+#   the referenced file can be the same as SSLCertificateFile
+#   when the CA certificates are directly appended to the server
+#   certificate for convinience.
+#SSLCertificateChainFile /etc/pki/tls/certs/server-chain.crt
+SSLCertificateChainFile /etc/pki/tls/certs/DigiCertCA.crt
+##########################HSTST################################
+
+Header always set Strict-Transport-Security "max-age=63072000; includeSubdomains"
+
+#   Certificate Authority (CA):
+#   Set the CA certificate verification path where to find CA
+#   certificates for client authentication or alternatively one
+#   huge file containing all of them (file must be PEM encoded)
+#SSLCACertificateFile /etc/pki/tls/certs/ca-bundle.crt
+
+#   Client Authentication (Type):
+#   Client certificate verification type and depth.  Types are
+#   none, optional, require and optional_no_ca.  Depth is a
+#   number which specifies how deeply to verify the certificate
+#   issuer chain before deciding the certificate is not valid.
+#SSLVerifyClient require
+#SSLVerifyDepth  10
+
+#   Access Control:
+#   With SSLRequire you can do per-directory access control based
+#   on arbitrary complex boolean expressions containing server
+#   variable checks and other lookup directives.  The syntax is a
+#   mixture between C and Perl.  See the mod_ssl documentation
+#   for more details.
+#<Location />
+#SSLRequire (    %{SSL_CIPHER} !~ m/^(EXP|NULL)/ \
+#            and %{SSL_CLIENT_S_DN_O} eq "Snake Oil, Ltd." \
+#            and %{SSL_CLIENT_S_DN_OU} in {"Staff", "CA", "Dev"} \
+#            and %{TIME_WDAY} >= 1 and %{TIME_WDAY} <= 5 \
+#            and %{TIME_HOUR} >= 8 and %{TIME_HOUR} <= 20       ) \
+#           or %{REMOTE_ADDR} =~ m/^192\.76\.162\.[0-9]+$/
+#</Location>
+
+#   SSL Engine Options:
+#   Set various options for the SSL engine.
+#   o FakeBasicAuth:
+#     Translate the client X.509 into a Basic Authorisation.  This means that
+#     the standard Auth/DBMAuth methods can be used for access control.  The
+#     user name is the `one line' version of the client's X.509 certificate.
+#     Note that no password is obtained from the user. Every entry in the user
+#     file needs this password: `xxj31ZMTZzkVA'.
+#   o ExportCertData:
+#     This exports two additional environment variables: SSL_CLIENT_CERT and
+#     SSL_SERVER_CERT. These contain the PEM-encoded certificates of the
+#     server (always existing) and the client (only existing when client
+#     authentication is used). This can be used to import the certificates
+#     into CGI scripts.
+#   o StdEnvVars:
+#     This exports the standard SSL/TLS related `SSL_*' environment variables.
+#     Per default this exportation is switched off for performance reasons,
+#     because the extraction step is an expensive operation and is usually
+#     useless for serving static content. So one usually enables the
+#     exportation for CGI and SSI requests only.
+#   o StrictRequire:
+#     This denies access when "SSLRequireSSL" or "SSLRequire" applied even
+#     under a "Satisfy any" situation, i.e. when it applies access is denied
+#     and no other module can change it.
+#   o OptRenegotiate:
+#     This enables optimized SSL connection renegotiation handling when SSL
+#     directives are used in per-directory context. 
+#SSLOptions +FakeBasicAuth +ExportCertData +StrictRequire
+<Files ~ "\.(cgi|shtml|phtml|php3?)$">
+    SSLOptions +StdEnvVars
+</Files>
+<Directory "/var/www/cgi-bin">
+    SSLOptions +StdEnvVars
+</Directory>
+
+#   SSL Protocol Adjustments:
+#   The safe and default but still SSL/TLS standard compliant shutdown
+#   approach is that mod_ssl sends the close notify alert but doesn't wait for
+#   the close notify alert from client. When you need a different shutdown
+#   approach you can use one of the following variables:
+#   o ssl-unclean-shutdown:
+#     This forces an unclean shutdown when the connection is closed, i.e. no
+#     SSL close notify alert is send or allowed to received.  This violates
+#     the SSL/TLS standard but is needed for some brain-dead browsers. Use
+#     this when you receive I/O errors because of the standard approach where
+#     mod_ssl sends the close notify alert.
+#   o ssl-accurate-shutdown:
+#     This forces an accurate shutdown when the connection is closed, i.e. a
+#     SSL close notify alert is send and mod_ssl waits for the close notify
+#     alert of the client. This is 100% SSL/TLS standard compliant, but in
+#     practice often causes hanging connections with brain-dead browsers. Use
+#     this only for browsers where you know that their SSL implementation
+#     works correctly. 
+#   Notice: Most problems of broken clients are also related to the HTTP
+#   keep-alive facility, so you usually additionally want to disable
+#   keep-alive for those clients, too. Use variable "nokeepalive" for this.
+#   Similarly, one has to force some clients to use HTTP/1.0 to workaround
+#   their broken HTTP/1.1 implementation. Use variables "downgrade-1.0" and
+#   "force-response-1.0" for this.
+BrowserMatch "MSIE [2-5]" \
+         nokeepalive ssl-unclean-shutdown \
+         downgrade-1.0 force-response-1.0
+
+#   Per-Server Logging:
+#   The home of a custom SSL log file. Use this when you want a
+#   compact non-error SSL logfile on a virtual host basis.
+CustomLog logs/ssl_request_log \
+          "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b"
+
+
+
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName bicentenario.usfq.edu.ec
+        ServerAlias bicentenario.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/eventos/libertad-antigua-y-moderna-en-las-independencias-andinas
+</VirtualHost>
+
+
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias cisco.usfq.edu.ec
+        ServerName cisco.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/cisco-networking-academy
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName workshop-eicat.usfq.edu.ec
+        ServerAlias workshop-eicat.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/eventos/workshop-how-use-eicat-standard-assess-environmental-impacts-alien-species
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName verano.usfq.edu.ec
+        ServerAlias verano.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/3671
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName voxel.usfq.edu.ec
+        ServerAlias voxel.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-beca-voxel-2022
+</VirtualHost>
+
+
+
+<VirtualHost *:443>
+        ServerName asistenciafinanciera.usfq.edu.ec
+        ServerAlias asistenciafinanciera.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/becas/asistencia-financiera
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName iead.usfq.edu.ec
+        ServerAlias iead.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/institutos-de-investigacion/instituto-de-estudios-avanzados-en-desigualdades-iead
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName bad.usfq.edu.ec
+        ServerAlias bad.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/eventos/casa-abierta-be-dragon-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName iconfucio.usfq.edu.ec
+        ServerAlias www.iconfucio.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/instituto-confucio
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName especializacion-ortodoncia.usfq.edu.ec
+        ServerAlias especializacion-ortodoncia.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrados/especializacion-en-ortodoncia
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName valencia.usfq.edu.ec
+        ServerAlias valencia.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/valencia-study-abroad-program
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName saludpublica.usfq.edu.ec
+        ServerAlias saludpublica.usfq.edu.ec
+        RedirectMatch (.*) http://www.usfq.edu.ec/programas_academicos/posgrado/posgrados_cocsa/Paginas/salud_publica.aspx
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName maestria-gerencia-de-datos-y-negocios.usfq.edu.ec
+        ServerAlias maestria-gerencia-de-datos-y-negocios.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrados/maestria-gerencia-de-datos-y-negocios
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName coiltraining2022.usfq.edu.ec
+        ServerAlias coiltraining2022.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/eventos/capacitacion-coil-para-el-ecuador
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName lameditacion.usfq.edu.ec
+        ServerAlias lameditacion.usfq.edu.ec
+        DocumentRoot /home/lameditacion
+        CustomLog logs/lameditacion.usfq.edu.ec-access.log combined
+</VirtualHost>
+
+
+
+<VirtualHost *:443>
+        ServerName vpn2.usfq.edu.ec
+        ServerAlias vpn2.usfq.edu.ec
+        RedirectMatch (.*) https://www4.usfq.edu.ec/paloalto/GlobalProtect20Portal.html
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias normanborlaug.usfq.edu.ec
+        ServerName normanborlaug.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-norman-borlaug-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName especializacion-neonatologia.usfq.edu.ec
+        ServerAlias especializacion-neonatologia.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrado/colegio-de-ciencias-de-la-salud/escuela-de-especialidades-medicas/especializacion-medica-0
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName maestria-industrial.usfq.edu.ec
+        ServerAlias maestria-industrial.usfq.edu.ec
+        RedirectMatch (.*) http://www.usfq.edu.ec/programas_academicos/posgrado/posgrados_poli/Paginas/maestria-industrial.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName maestria-nanoelectronica.usfq.edu.ec
+        ServerAlias maestria-nanoelectronica.usfq.edu.ec
+        RedirectMatch (.*) http://www.usfq.edu.ec/programas_academicos/posgrado/posgrados_poli/Paginas/maestria_en_nanoelectronica.aspx
+</VirtualHost>
+
+
+
+<VirtualHost *:443>
+        ServerName //
+        ServerAlias maestria-quimica.usfq.edu.ec
+        RedirectMatch (.*) http://www.usfq.edu.ec/programas_academicos/posgrado/posgrados_poli/Paginas/maestria_en_quimica.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName maestria-ciencia-tecnologia-alimentos.usfq.edu.ec
+        ServerAlias maestria-ciencia-tecnologia-alimentos.usfq.edu.ec
+        RedirectMatch (.*) http://www.usfq.edu.ec/programas_academicos/posgrado/posgrados_poli/Paginas/maestria_en_ciencia_y_tecnologia_de_alimentos.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName phd-microbiologia.usfq.edu.ec
+        ServerAlias phd_microbiologia.usfq.edu.ec
+        RedirectMatch (.*) http://www.usfq.edu.ec/programas_academicos/posgrado/posgrados_cociba/doctorado_microbiologia/Paginas/default.aspx
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName especialidad-anestesiologia.usfq.edu.ec
+        ServerAlias especialidad-anestesiologia.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrado/colegio-de-ciencias-de-la-salud/escuela-de-especialidades-medicas/especializacion-en-2
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName maestria-en-ensenanza-de-ingles-como-segundo.usfq.edu.ec
+        ServerAlias maestria-en-ensenanza-de-ingles-como-segundo.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrado/colegio-de-ciencias-sociales-y-humanidades/maestria-en-ensenanza-de-ingles-como-segundo
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName search.usfq.edu.ec
+        ServerAlias search.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/search
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName excellenceinservice.usfq.edu.ec
+        ServerAlias excellenceinservice.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/beca-excellence-service-2022
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName culinarychallenge.usfq.edu.ec
+        ServerAlias culinarychallenge.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/culinary-challenge-junior-chef-2022
+</VirtualHost>
+
+
+
+<VirtualHost *:443>
+        ServerName becas-politecnico.usfq.edu.ec
+        ServerAlias becas-politecnico.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/colegio/colegio-de-ciencias-e-ingenierias#becas
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName politecnico.usfq.edu.ec
+        ServerAlias politecnico.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/colegio/colegio-de-ciencias-e-ingenierias
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName gd.usfq.edu.ec
+        ServerAlias gd.usfq.edu.ec
+        RedirectMatch (.*) https://estudusfqedu.sharepoint.com/sites/test-reunion/
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName expertos.usfq.edu.ec
+        ServerAlias expertos.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/guia-de-expertos
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName guiadeexpertos.usfq.edu.ec
+        ServerAlias guiadeexpertos.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/guia-de-expertos
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName guiaexpertos.usfq.edu.ec
+        ServerAlias guiaexpertos.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/guia-de-expertos
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName vivelo.usfq.edu.ec
+        ServerAlias vivelo.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/usfq-valencia
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName campusglobal.usfq.edu.ec
+        ServerAlias campusglobal.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/usfq-valencia
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName maestria-seguridad-salud-y-ambiente.usfq.edu.ec
+        ServerAlias maestria-seguridad-salud-y-ambiente.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrado/colegio-de-ciencias-e-ingenierias/maestria-en-seguridad-salud-y-ambiente
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName milenio.usfq.edu.ec
+        ServerAlias milenio.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/3035/
+</VirtualHost>
+
+
+
+<VirtualHost *:443>
+        ServerName semanadelalibertad.usfq.edu.ec
+        ServerAlias semanadelalibertad.usfq.edu.ec
+       RedirectMatch (.*) https://www.usfq.edu.ec/es/evento/2021-11-08/semana-de-la-libertad-2021
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName claudebourgelat.usfq.edu.ec
+        ServerAlias claudebourgelat.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/becas-claude-bourgelat-2022
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName adalovelace.usfq.edu.ec
+        ServerAlias adalovelace.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-de-becas-ada-lovelace-para-estudios-de-ingenieria-en-ciencias-de-la-computacion-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName nicolasappert.usfq.edu.ec
+        ServerAlias nicolasappert.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-de-becas-nicolas-appert-para-estudios-de-ingenieria-en-alimentos-2022
+</VirtualHost>
+
+
+
+<VirtualHost *:443>
+        ServerName construyefuturo.usfq.edu.ec
+        ServerAlias construyefuturo.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-de-becas-construye-futuro-para-estudios-de-ingenieria-civil-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName jameswatt.usfq.edu.ec
+        ServerAlias jameswatt.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-de-becas-james-watt-para-estudios-de-ingenieria-mecanica-2022
+</VirtualHost>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<VirtualHost *:443>
+        ServerName bettymeggers.usfq.edu.ec
+        ServerAlias bettymeggers.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/beca-de-antropologia-betty-meggers-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName nikolatesla.usfq.edu.ec
+        ServerAlias nikolatesla.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-de-becas-nikola-tesla-para-estudios-de-ingenieria-en-electronica-y-automatizacion
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName davidricardo.usfq.edu.ec
+        ServerAlias davidricardo.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-david-ricardo-2022
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName fredericktaylor.usfq.edu.ec
+        ServerAlias fredericktaylor.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-de-ingenieria-industrial-frederick-taylor
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName humboldt.usfq.edu.ec
+        ServerAlias humboldt.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/beca-humboldt-2022
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName acr-la2022.usfq.edu.ec
+        ServerAlias acr-la2022..usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/en/event/2022-07-07/association-consumer-research-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias formulariosacademicos.usfq.edu.ec
+        ServerName formulariosacademicos.usfq.edu.ec
+        RedirectMatch (.*) http://www.usfq.edu.ec/sobre_la_usfq/oasa/Paginas/formularios_academicos.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName emprendimiento.usfq.edu.ec
+        ServerAlias www.emprendimiento.usfq.edu.ec
+        RedirectMatch (.*) http://www.usfq.edu.ec/eventos/emprendimiento_2013/Paginas/default.aspx
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName learningcenter.usfq.edu.ec
+        ServerAlias learningcenter.usfq.edu.ec
+        RedirectMatch (.*) http://www.usfq.edu.ec/estudiantes/learning_center/Paginas/learning_center.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName bolsadeempleo.usfq.edu.ec
+        ServerAlias bolsadeempleo.usfq.edu.ec
+        RedirectMatch (.*) https://usfq-csm.symplicity.com/
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName sustentabilidad-logistica.usfq.edu.ec
+        ServerAlias sustentabilidad-logistica.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/instituto/instituto-de-innovacion-en-productividad-y-logistica-catena-usfq/encuesta-sustentabilidad-logistica
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName bhs.usfq.edu.ec
+        ServerAlias bhs.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/club/business-honor-society
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName retornodelosdragones.usfq.edu.ec
+        ServerAlias retornodelosdragones.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/2816
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName alumni.usfq.edu.ec
+        ServerAlias alumni.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/alumni
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName becaingindustrial.usfq.edu.ec
+        ServerAlias becaingindustrial.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/i-concurso-de-ingenieria-industrial-frederick-taylor
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName dragonbiomed.usfq.edu.ec
+        ServerAlias dragonbiomed.usfq.edu.ec
+        RedirectMatch (.*) https://dragonbiomed.com/
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName galapagoals.usfq.edu.ec
+        ServerAlias galapagoals.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/opi/internacional/estudiantes-internacionales/programas-academicos/cortos/galapagoals
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName cursos.usfq.edu.ec
+        ServerAlias cursos.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/cursos?academic-area=All&field_date_range_value=3
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName admisionesnoregulares.usfq.edu.ec
+        ServerAlias admisionesnoregulares.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/admisiones/estudiantes-no-regulares
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName campuslife.usfq.edu.ec
+        ServerAlias campuslife.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/estudiantes/campus-life
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName onee.usfq.edu.ec
+        ServerAlias onee.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/estudiantes/oficina-de-necesidades-educativas-especiales-onee
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName unidiversidad.usfq.edu.ec
+        ServerAlias unidiversidad.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/estudiantes/unidiversidad
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName orientacionestudiantes.usfq.edu.ec
+        ServerAlias orientacionestudiantes.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/2185
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName delfos.usfq.edu.ec
+        ServerAlias delfos.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/estudiantes/programa-de-diversidad-etnica-pde
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName paci.usfq.edu.ec
+        ServerAlias paci.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/2215
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName mdi.usfq.edu.ec
+        ServerAlias mdi.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrado/colegio-de-ciencias-e-ingenierias/maestria-en-direccion-de-empresas-constructoras-e
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName consejeriapsicologica.usfq.edu.ec
+        ServerAlias consejeriapsicologica.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/en/node/2184
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName masters-tropical-ecology-conservation.usfq.edu.ec
+        ServerAlias masters-tropical-ecology-conservation.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/en/postgraduate/college-biological-and-environmental-sciences/masters-tropical-ecology-conservation
+</VirtualHost>
+
+                                 
+<VirtualHost *:443>
+        ServerName mediosinteractivos.usfq.edu.ec
+        ServerAlias mediosinteractivos.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/carrera/colegio-de-comunicacion-y-artes-contemporaneas/diseno-grafico-medios-interactivos
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias avances.usfq.edu.ec
+        ServerName avances.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/avances 
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias iurisdictio.usfq.edu.ec
+        ServerName iurisdictio.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/iurisdictio
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias lawreview.usfq.edu.ec
+        ServerName lawreview.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/lawreview 
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias eloutsider.usfq.edu.ec
+        ServerName eloutsider.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/eloutsider
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias odontoinvestigacion.usfq.edu.ec 
+        ServerName odontoinvestigacion.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/odontoinvestigacion
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias anima.usfq.edu.ec
+        ServerName anima.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/anima 
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias perdebate.usfq.edu.ec
+        ServerName perdebate.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/perdebate
+</VirtualHost>
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias bitacora.usfq.edu.ec
+        ServerName bitacora.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/bitacora
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias aa.usfq.edu.ec
+        ServerName aa.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/archivosacademicos
+</VirtualHost>
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias polemika.usfq.edu.ec
+        ServerName polemika.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/polemika
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias esferas.usfq.edu.ec
+        ServerName esferas.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/esferas
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias ornitologiaecuador.usfq.edu.ec
+        ServerName ornitologiaecuador.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/reo
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias pagos.usfq.edu.ec
+        ServerName pagos.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/hallpagos/Pages/default.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias sd.usfq.edu.ec
+        ServerName sd.usfq.edu.ec
+        RedirectMatch (.*) https://servicedesk.usfq.edu.ec/proactivanet/servicedesk/default.paw
+</VirtualHost>
+
+
+<VirtualHost *:443>
+
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias mysite.usfq.edu.ec
+        ServerName mysite.usfq.edu.ec
+        RedirectMatch (.*) https://miusfq.usfq.edu.ec
+</VirtualHost>
+
+<VirtualHost *:443>
+
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias blogcompetencia.usfq.edu.ec
+        ServerName blogcompetencia.usfq.edu.ec
+        RedirectMatch (.*) https://blogcompetencia/blog1
+</VirtualHost>
+
+<VirtualHost *:443>
+
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias blogcompetencia.usfq.edu.ec
+        ServerName blogcompetencia.usfq.edu.ec
+        RedirectMatch (.*) https://blogcompetencia/blog1
+</VirtualHost>
+
+<VirtualHost *:443>
+
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias blogdlcompetencia.usfq.edu.ec
+        ServerName blogcompetencia.usfq.edu.ec
+        RedirectMatch (.*) https://blogdlcompetencia/blog2
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias d2l.usfq.edu.ec
+        ServerName d2l.usfq.edu.ec
+        RedirectMatch (.*) https://miusfv.usfq.edu.ec/index_local.asp
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerName votomysite2.usfq.edu.ec
+        ServerAlias votomysite2.usfq.edu.ec
+        DocumentRoot /home/vmysite
+        SSLEngine on
+        SSLCertificateFile /etc/pki/tls/certs/www4.crt
+        SSLCertificateKeyFile /etc/pki/tls/private/www4.key
+        SSLCertificateChainFile /etc/pki/tls/certs/DigiCertCA.crt
+        CustomLog logs/votomysite2.usfq.edu.ec-access.log combined
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerName marketingdigital.usfq.edu.ec
+        ServerAlias marketingdigital.usfq.edu.ec
+        DocumentRoot /home/adminsocial/
+        CustomLog logs/marketingdigital.usfq.edu.ec-access.log combined
+</VirtualHost>
+
+#<VirtualHost *:443>
+#
+#        ServerAdmin webmaster@usfq.edu.ec
+#        ServerAlias revistas.usfq.edu.ec
+#        ServerName revistas.usfq.edu.ec
+#       DocumentRoot /home/ojs-2.4.6/
+#       CustomLog logs/ojs.usfq.edu.ec-access.log combined
+#
+#</VirtualHost>
+#
+#<VirtualHost *:443>
+#
+#        ServerAdmin webmaster@usfq.edu.ec
+#        ServerAlias aulamagna.usfq.edu.ec
+#        ServerName aulamagna.usfq.edu.ec
+#        DocumentRoot /home/aulamagna/aulamagna
+#               CustomLog logs/aulamagnassl.usfq.edu.ec-access.log combined
+#SSLCertificateChainFile /etc/pki/tls/certs/DigiCertCA.crt
+#SSLCertificateKeyFile /etc/pki/tls/private/www4.key
+#SSLCertificateFile /etc/pki/tls/certs/www4.crt
+
+#</VirtualHost>
+<VirtualHost *:443>
+        ServerName becas.usfq.edu.ec
+        ServerAlias becas.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/2839
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerName sso.usfq.edu.ec
+        ServerAlias sso.usfq.edu.ec
+        DocumentRoot /home/usfq_phpcas_hubi/usfq/
+        CustomLog logs/sso.usfq.edu.ec-access.log combined
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName beca-euclides.usfq.edu.ec
+        ServerAlias beca-euclides.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/2923
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerName registration.usfq.edu.ec
+        ServerAlias registration.usfq.edu.ec
+        RedirectMatch (.*) https://p-ban-app-08.usfq.edu.ec:8443/StudentRegistrationSsb/ssb/registration/
+        CustomLog logs/sso.usfq.edu.ec-access.log combined
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName yachaks.espiritualidadesquito.com
+        ServerAlias yachaks.espiritualidadesquito.com
+        RedirectMatch (.*) https://www.espiritualidadesquito.com/?page_id=174
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName vaisnavismo.espiritualidadesquito.com
+        ServerAlias vaisnavismo.espiritualidadesquito.com
+        RedirectMatch (.*) https://www.espiritualidadesquito.com/?page_id=188
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName sd.usfq.edu.ec
+        ServerAlias sd.usfq.edu.ec
+       RedirectMatch (.*) https://servicedesk.usfq.edu.ec/proactivanet/servicedesk/default.paw
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName optimizacion.usfq.edu.ec
+        ServerAlias optimizacion.usfq.edu.ec
+       RedirectMatch (.*) https://proyectos.usfq.edu.ec/optimizacion/
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerName cursosti.usfq.edu.ec
+        ServerAlias cursosti.usfq.edu.ec
+        DocumentRoot /home/cursosti/
+        CustomLog logs/cursosti.usfq.edu.ec-access.log combined
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerName productosti.usfq.edu.ec
+        ServerAlias productosti.usfq.edu.ec
+        DocumentRoot /home/SABIAS/
+        CustomLog logs/productosti.usfq.edu.ec-access.log combined
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName regulaciones.usfq.edu.ec
+        ServerAlias regulaciones.usfq.edu.ec
+       RedirectMatch (.*) https://www.usfq.edu.ec/sobre_la_usfq/informacion_institucional/regulaciones_institucionales/Paginas/default.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName proyectores.usfq.edu.ec
+        ServerAlias proyectores.usfq.edu.ec
+        RedirectMatch (.*) https://www4.usfq.edu.ec/proyectores/
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName minemeld.usfq.edu.ec
+        ServerAlias minemeld.usfq.edu.ec
+        RedirectMatch (.*) https://www4.usfq.edu.ec/minemeld/
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName formasdepago.usfq.edu.ec
+        ServerAlias formasdepago.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/sobre_la_usfq/Documents/WEB_PAGOS_Mesa_de_trabajo_1.pdf
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName requisitosplandepagos.usfq.edu.ec
+        ServerAlias requisitosplandepagos.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/sobre_la_usfq/Documents/2019_2020/requisitos-financiamiento-2019-2020.pdf
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName catena.usfq.edu.ec
+        ServerAlias catena.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/programas_academicos/colegios/politecnico/institutos/innovacion_y_logistica/Paginas/default.aspx
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName ace.usfq.edu.ec
+        ServerAlias ace.usfq.edu.ec
+        RedirectMatch (.*) https://estudusfqedu.sharepoint.com/sites/ace
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName testinfra.usfq.edu.ec
+        ServerAlias testinfra.usfq.edu.ec
+        RedirectMatch (.*) https://estudusfqedu.sharepoint.com/sites/testti/
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName globalhealth.usfq.edu.ec
+        ServerAlias globalhealth.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/programas_academicos/colegios/cocsa/globalhealth/
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName  unicornio.usfq.edu.ec
+        ServerAlias unicornio.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/eventos/doers_day/Paginas/default.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName documentonotario.usfq.edu.ec
+        ServerAlias documentonotarioausfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/admisiones/becas_prestamos/Documents/Senior_Notario_2019%20ACTUALIZADO.pdf
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName johndewey.usfq.edu.ec
+        ServerAlias johndewey.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/iii-concurso-para-becas-john-dewey-para-estudiar-educacion-2022
+</VirtualHost>
+
+
+
+
+<VirtualHost *:443>
+        ServerName infra.usfq.edu.ec
+        ServerAlias infra.usfq.edu.ec
+        RedirectMatch (.*) https://proyectos.usfq.edu.ec/infraestructura-ti/_layouts/15/start.aspx#/default.aspx
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName aci.usfq.edu.ec
+        ServerAlias aci.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/eventos/certificacion_hormigon/Paginas/default.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName virtual.usfq.edu.ec
+        ServerAlias virtual.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/sobre_la_usfq/en_linea/Paginas/default.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName miusfq.usfq.edu.ec
+        ServerAlias miusfq.usfq.edu.ec
+        RedirectMatch (.*) https://mysite.usfq.edu.ec
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName voxel.usfq.edu.ec
+        ServerAlias voxel.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-beca-voxel-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName puntodegiro.usfq.edu.ec
+        ServerAlias puntodegiro.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-punto-de-giro-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName mariaalban.usfq.edu.ec
+        ServerAlias mariaalban.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-maria-alban-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName terramater.usfq.edu.ec
+        ServerAlias terramater.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/2945
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName olimpiadasquimica.usfq.edu.ec
+        ServerAlias olimpiadasquimica.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/2953
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName nextgen.usfq.edu.ec
+        ServerAlias nexten.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/node/2915
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName fall2020.usfq.edu.ec
+        ServerAlias fall2020.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/admisiones/admisiones_pregrado/Paginas/admision_estudiantes_no_regulares.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName posts.usfq.edu.ec
+        ServerAlias posts.usfq.edu.ec
+        RedirectMatch (.*) https://revistas.usfq.edu.ec/index.php/posts 
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName ferialaboral.usfq.edu.ec
+        ServerAlias ferialaboral.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/eventos/feria_laboral_online/Paginas/default.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName dona.usfq.edu.ec
+        ServerAlias dona.usfq.edu.ec
+        RedirectMatch (.*) https://btnpagos.usfq.edu.ec/pagos/donaciones.aspx?adm=710110507
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName go.usfq.edu.ec
+        ServerAlias go.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/opi/international-students/Paginas/global-online.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName dragonesporsiempre.usfq.edu.ec
+        ServerAlias dragonesporsiempre.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/evento/2021-09-11/quincuagesima-tercera-ceremonia-del-comienzo-clase-2021
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName donatiputini.usfq.edu.ec
+        ServerAlias donatiputini.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/programas_academicos/Tiputini/Paginas/dona.aspx
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName tiputini.usfq.edu.ec
+        ServerAlias tiputini.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/programas_academicos/Tiputini/Paginas/dona.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName flows.usfq.edu.ec
+        ServerAlias flows.ausfq.edu.ec
+        RedirectMatch (.*) https://proyectos.usfq.edu.ec/flows/default.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName loeri.usfq.edu.ec
+        ServerAlias loeri.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/opi/international-students/Paginas/research-opportunities.aspx#demoTab1
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName aladaa2020.usfq.edu.ec
+        ServerAlias aladaa2020.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/sobre_la_usfq/servicios/instituto_confucio/aladaa2020/Paginas/inicio.aspx
+
+</VirtualHost>
+
+
+<VirtualHost *:443>
+        ServerName dragonesporsiempre.usfq.edu.ec
+        ServerAlias dragonesporsiempre.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/eventos/graduacion/
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerName invitacion.usfq.edu.ec
+        ServerAlias invitacion.usfq.edu.ec
+        DocumentRoot /home/invitacion/
+        CustomLog logs/invitacion.usfq.edu.ec-access.log combined
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName covid.usfq.edu.ec
+        ServerAlias covid.usfq.edu.ec
+        RedirectMatch (.*) https://healthecuador.org/covid-19-usfq
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName wise2.usfq.edu.ec
+        ServerAlias wise2.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/eventos/wise_2/Paginas/default.aspx
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName wise.usfq.edu.ec
+        ServerAlias wise.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/beca-wise-2022
+</VirtualHost>
+
+
+
+<VirtualHost *:443>
+        ServerName empleo.usfq.edu.ec
+        ServerAlias empleo.usfq.edu.ec
+        RedirectMatch (.*) https://evaluaciones.usfq.edu.ec/contrataciones/
+</VirtualHost>
+
+################################ASISTENCIA FINANCIERA#################################
+
+<VirtualHost *:443>
+        ServerName analisisasistenciafinanciera.usfq.edu.ec
+        ServerAlias analisisasistenciafinanciera.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=A
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName analisisasistenciafinanciera.usfq.edu.ec
+        ServerAlias analisisasistenciafinanciera.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=A
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName renovacionbecas.usfq.edu.ec
+        ServerAlias renovacionbecas.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=B
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName plandepagos.usfq.edu.ec
+        ServerAlias plandepagos.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=C
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName aceptacionbeca.usfq.edu.ec
+        ServerAlias aceptacionbeca.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=D
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName aplicacionasistenciafinanciera.usfq.edu.ec
+        ServerAlias aplicacionasistenciafinanciera.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=E
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName renovacionasistenciafinanciera.usfq.edu.ec
+        ServerAlias renovacionasistenciafinanciera.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=F
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName becas30.usfq.edu.ec
+        ServerAlias becas30.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=G
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName aplicacionleyhumanitaria.usfq.edu.ec
+        ServerAlias aplicacionleyhumanitaria.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=H
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName solicitudesvarias.usfq.edu.ec
+        ServerAlias solicitudesvarias.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=J
+</VirtualHost>
+
+##############################################################################################
+
+
+<VirtualHost *:443>
+        ServerName orientacion.usfq.edu.ec
+        ServerAlias orientacion.usfq.edu.ec        
+	RedirectMatch (.*) https://whatup.usfq.edu.ec/index.php/test-1/
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName www4.usfq.edu.ec
+        ServerAlias www4.usfq.edu.ec
+        RedirectMatch (.*) https://whatup.usfq.edu.ec/index.php/test-1/
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerAlias www.gobe.usfq.edu.ec
+        ServerName gobe.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/estudiantes/gobe
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName campustour.usfq.edu.ec
+        ServerAlias campustour.usfq.edu.ec
+        RedirectMatch (.*) https://aem-solutions.com/usfq-rv/
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerAdmin webmaster@usfq.edu.ec
+        ServerName petfriendly.usfq.edu.ec
+        ServerAlias petfriendly.usfq.edu.ec
+        DocumentRoot /home/petfriendly/
+        SSLEngine on
+        SSLCertificateFile /etc/pki/tls/certs/www4.crt
+        SSLCertificateKeyFile /etc/pki/tls/private/www4.key
+        SSLCertificateChainFile /etc/pki/tls/certs/DigiCertCA.crt
+        CustomLog logs/petfriendly.usfq.edu.ec-access.log combined
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName controlcambioss.usfq.edu.ec
+        ServerAlias controlcambios.usfq.edu.ec
+        RedirectMatch (.*) https://ncv.microsoft.com/PKu1COU3lO
+</VirtualHost>
+########################################################## VHOST NUEVO WWW ################################
+<VirtualHost *:443>
+        ServerName wise3.usfq.edu.ec
+        ServerAlias wise3.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/evento/2021-01-12/programa-wise-ciclo-3
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName vinculacion.usfq.edu.ec
+        ServerAlias vinculacion.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/vinculacion-con-la-sociedad
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName camd.usfq.edu.ec
+        ServerAlias camd.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/evento/2020-10-14/certificacion-para-cuidadores-informales-de-adultos-mayores-camd
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName gentequeinspira.usfq.edu.ec
+        ServerAlias gentequeinspira.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/becas/gente-que-inspira-produbanco-3ra-edicion
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName posgrados.usfq.edu.ec
+        ServerAlias posgrados.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrados
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName interpretatio.usfq.edu.ec
+        ServerAlias interpretatio.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/interpretatio-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName observaciones-iia.usfq.edu.ec
+        ServerAlias observaciones-iia.usfq.edu.ec
+	RedirectMatch (.*) https://estudusfqedu-my.sharepoint.com/:f:/g/personal/ema_usfq_edu_ec/Eqa6HENTmTZLspG93ytLtJUBurz0bg101YMR2Axx_nC2nw?e=olTwuV
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName charlesdarwin.usfq.edu.ec
+        ServerAlias charlesdarwin.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/xiv-concurso-de-becas-charles-darwin
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName chat.usfq.edu.ec
+        ServerAlias www.chat.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/colegio/colegio-de-hospitalidad-arte-culinario-y-turismo
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName lwp.usfq.edu.ec
+        ServerAlias lwp.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/investigacion/usfq-law-working-papers
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName maestria-ecologia-tropical-conservacion.usfq.edu.ec
+        ServerAlias maestria-ecologia-tropical-conservacion.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrado/colegio-de-ciencias-biologicas-y-ambientales/maestria-en-ecologia-tropical-y-conservacion
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName ayudaeconomica.usfq.edu.ec
+        ServerAlias ayudaeconomica.usfq.edu.ec
+        RedirectMatch (.*) https://servicios02.usfq.edu.ec/FrmAsistenciaFinanciera/?param=I
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName metc.usfq.edu.ec
+        ServerAlias metc.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrado/colegio-de-ciencias-biologicas-y-ambientales/maestria-en-ecologia-tropical-y-conservacion
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName decanatoestudiantes.usfq.edu.ec
+        ServerAlias decanatoestudiantes.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/estudiantes/decanato-de-estudiantes
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName enricofermi.usfq.edu.ec
+        ServerAlias enricofermi.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/beca/concurso-nacional-de-becas-enrico-fermi-2022
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName recruit.usfq.edu.ec
+        ServerAlias recruit.usfq.edu.ec
+        RedirectMatch (.*) http://www4.usfq.edu.ec/RECRUIT/mantenimiento.jpg
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName admision.usfq.edu.ec
+        ServerAlias admision.usfq.edu.ec
+        RedirectMatch (.*) http://www4.usfq.edu.ec/RECRUIT/mantenimiento.jpg
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName perfiles.usfq.edu.ec
+        ServerAlias perfiles.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/perfiles
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName calendarios.usfq.edu.ec
+        ServerAlias calendarios.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/calendarios
+</VirtualHost>
+<VirtualHost *:443>
+        ServerName maestria-derecho-administrativo.usfq.edu.ec
+        ServerAlias maestria-derecho-administrativo.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/posgrado/colegio-de-jurisprudencia/maestria-en-derecho-administrativo
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName globaldragonweek.usfq.edu.ec
+        ServerAlias globaldragonweek.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/evento/2021-04-05/global-dragon-week
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName cursocoil.usfq.edu.ec
+        ServerAlias cursocoil.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/es/curso/fundamentos-coil-colaboracion-internacional-en-linea  
+</VirtualHost>
+
+<VirtualHost *:443>
+        ServerName iia.usfq.edu.ec
+        ServerAlias iia.usfq.edu.ec
+        RedirectMatch (.*) https://www.usfq.edu.ec/instituto/instituto-de-investigaciones-atmosfericas-usfq-iia-usfq
+</VirtualHost>
